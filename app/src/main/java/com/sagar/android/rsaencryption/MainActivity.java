@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
             /*
             send a string for encryption using the public key.
-            we will get the eocrypted byte[] in return.
+            we will get the encrypted byte[] in return.
              */
             String dataToEncrypt = "Sagar Nayak";
             logUtil.logD("sending data to encrypt : " + dataToEncrypt);
