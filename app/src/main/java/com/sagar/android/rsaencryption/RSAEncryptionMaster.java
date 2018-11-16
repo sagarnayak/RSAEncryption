@@ -16,8 +16,12 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.security.auth.callback.Callback;
 
 public class RSAEncryptionMaster {
+
+    public Thread t;
+
 
     public byte[] RSAEncrypt(final String plain, PublicKey publicKey) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
@@ -108,4 +112,78 @@ public class RSAEncryptionMaster {
         }
         return privateKey;
     }
+
+
+    /** I've Read that it is a good idea to run encryption tasks on another process
+     *
+     * @param plain
+     * @param publicKey
+     * @param callback
+     * @return Thread
+     */
+
+
+    public Thread encryptAsync(final String plain, final PublicKey publicKey, final Callback callback) {
+        Thread encryptThread = new Thread("asyncEncypt") {
+            public void run() {
+                try {
+                    byte[] data = RSAEncrypt(plain, publicKey);
+                    if (data == null) {
+                        callback.onError(new Exception("Encrypt returned null. was the plain empty?"));
+                    }
+                    callback.onSuccess(Base64.encodeToString(data, 0));
+                } catch (Exception e) {
+                    callback.onError(e);
+                }
+            };
+        };
+        return encryptThread;
+    }
+
+
+    public Thread decryptAsync(final String plain, final PrivateKey key, final Callback callback) {
+        Thread decryptThread = new Thread("asyncDecypt"){
+            @Override
+            public void run() {
+                try {
+                    String data = RSADecrypt(android.util.Base64.decode(plain.getBytes(),0), key);
+                    if (data == null) {
+                        callback.onError(new Exception("Encrypt returned null. was the plain empty?"));
+                    }
+                    callback.onSuccess(data);
+                } catch (Exception e) {
+                    callback.onError(e);
+                }
+            }
+        };
+        return decryptThread;
+    }
+
+
+
+     /**
+      *
+     *  When you encrypt or decrypt in callback mode you get noticed of result using this interface
+     *  - Great documentation form simbiose @ github!
+     */
+    public interface Callback {
+
+        /**
+         * Called when encrypt or decrypt job ends and the process was a success
+         *
+         * @param result the encrypted or decrypted String
+         */
+        void onSuccess(String result);
+
+        /**
+         * Called when encrypt or decrypt job ends and has occurred an error in the process
+         *
+         * @param exception the Exception related to the error
+         */
+        void onError(Exception exception);
+
+    }
+
+
+
 }
